@@ -1,0 +1,6 @@
+# SDK 发布包需要随包携带生成的 protobuf 桩,确保 fresh-clone 即可用
+# (否则 proto/__init__.py 导入的 *_pb2.py 缺失 → ImportError 崩溃)。
+# 此处反向包含全局 .gitignore 中被忽略的 *_pb2*.py,仅限 SDK proto 目录,
+# 不影响全局 *.pb.go 等其它"生成产物不入库"策略。
+!hailo_ipc_sdk/proto/*_pb2.py
+!hailo_ipc_sdk/proto/*_pb2_grpc.py

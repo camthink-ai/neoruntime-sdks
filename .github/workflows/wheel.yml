@@ -1,0 +1,159 @@
+name: Build Python SDK wheel
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Create or update a GitHub Release with the built wheel.
+        required: false
+        type: boolean
+        default: false
+      release_tag:
+        description: Release tag to publish. Defaults to v<python/setup.py version>.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-wheel:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip build
+          python -m pip install -e "./python[dev]"
+
+      - name: Run tests
+        run: python -m pytest -q python/tests
+
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import re
+          import sys
+
+          setup_py = pathlib.Path("python/setup.py").read_text(encoding="utf-8")
+          match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', setup_py)
+          if not match:
+              sys.exit("Could not find version in python/setup.py")
+
+          package_version = match.group(1)
+          release_tag = os.environ.get("RELEASE_TAG", "").strip()
+          if not release_tag and os.environ.get("GITHUB_REF_TYPE") == "tag":
+              release_tag = os.environ["GITHUB_REF_NAME"]
+          if not release_tag:
+              release_tag = f"v{package_version}"
+          if not release_tag.startswith("v"):
+              release_tag = f"v{release_tag}"
+
+          tag_version = release_tag.removeprefix("v")
+          if package_version != tag_version:
+              sys.exit(
+                  f"Release tag version {tag_version} does not match package version {package_version}"
+              )
+          print(f"Release tag: {release_tag}")
+          PY
+
+      - name: Build wheel
+        run: |
+          cd python
+          python -m build --wheel
+
+      - name: Inspect wheel
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          wheels = list(Path("python/dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"Expected one wheel, found {len(wheels)}")
+
+          with ZipFile(wheels[0]) as wheel:
+              names = wheel.namelist()
+          if any(name.startswith("tests/") for name in names):
+              raise SystemExit("Wheel unexpectedly contains tests/")
+
+          print(wheels[0])
+          PY
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-sdk-wheel
+          path: python/dist/*.whl
+          if-no-files-found: error
+
+  release:
+    needs: build-wheel
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-sdk-wheel
+          path: dist
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          wheel="$(ls dist/hailo_ipc_sdk-*.whl | head -1)"
+          version="$(basename "$wheel" | sed -E 's/^hailo_ipc_sdk-([^-]+)-.*/\1/')"
+
+          tag_name="$GITHUB_REF_NAME"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            tag_name="$RELEASE_TAG"
+            if [ -z "$tag_name" ]; then
+              tag_name="v$version"
+            fi
+          fi
+          case "$tag_name" in
+            v*) ;;
+            *) tag_name="v$tag_name" ;;
+          esac
+
+          if [ "${tag_name#v}" != "$version" ]; then
+            echo "Release tag $tag_name does not match wheel version $version" >&2
+            exit 1
+          fi
+
+          if gh release view "$tag_name" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag_name" "$wheel" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$tag_name" "$wheel" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$tag_name" \
+              --notes "Python SDK wheel release $tag_name"
+          fi

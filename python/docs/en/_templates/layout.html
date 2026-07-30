@@ -1,0 +1,54 @@
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+{{ super() }}
+<style>
+  .aipc-language-switch {
+    margin: 12px 12px 0;
+  }
+  .aipc-language-switch a {
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 4px;
+    color: #fff;
+    padding: 6px 10px;
+    text-align: center;
+    text-decoration: none;
+  }
+  .aipc-language-switch a:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+</style>
+<script>
+  (function () {
+    function switchUrl(targetLanguage) {
+      var path = window.location.pathname;
+      if (targetLanguage === "en" && path.indexOf("/python/zh/") !== -1) {
+        return path.replace("/python/zh/", "/python/en/") + window.location.search + window.location.hash;
+      }
+      if (targetLanguage === "zh" && path.indexOf("/python/en/") !== -1) {
+        return path.replace("/python/en/", "/python/zh/") + window.location.search + window.location.hash;
+      }
+      return targetLanguage === "en" ? "../en/" : "../zh/";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      var isEnglish = window.location.pathname.indexOf("/python/en/") !== -1;
+      var targetLanguage = isEnglish ? "zh" : "en";
+      var label = isEnglish ? "中文" : "English";
+      var container = document.createElement("div");
+      var link = document.createElement("a");
+
+      container.className = "aipc-language-switch";
+      link.href = switchUrl(targetLanguage);
+      link.textContent = label;
+      container.appendChild(link);
+
+      var sidebar = document.querySelector(".wy-side-nav-search");
+      if (sidebar) {
+        sidebar.appendChild(container);
+      }
+    });
+  }());
+</script>
+{% endblock %}
