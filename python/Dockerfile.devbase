@@ -1,0 +1,54 @@
+# AIPC Python SDK Base Image for Dev Workbench
+# 用于开发工作台的应用构建基础镜像
+
+FROM python:3.10-slim-bookworm
+
+LABEL maintainer="aipc@example.com" \
+      version="1.0.0" \
+      description="AIPC Python SDK Base Image for Dev Workbench"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgl1 \
+    libjpeg62-turbo \
+    libpng16-16 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create app directory
+WORKDIR /app
+
+# Copy SDK
+COPY hailo_ipc_sdk /tmp/sdk/hailo_ipc_sdk
+COPY setup.py /tmp/sdk/
+COPY README.md /tmp/sdk/
+COPY requirements.txt /tmp/sdk/
+
+# Install SDK and common dependencies
+RUN pip install --no-cache-dir /tmp/sdk && \
+    pip install --no-cache-dir numpy Pillow opencv-python-headless && \
+    rm -rf /tmp/sdk
+
+# Create directories
+RUN mkdir -p /app/data /app/logs && chmod 755 /app/data /app/logs
+
+# Environment
+ENV APP_ID=app \
+    DEBUG=0 \
+    LOG_LEVEL=INFO \
+    AI_RUNTIME_ENDPOINT=unix:///run/aipc/ai-runtime.sock \
+    EVENT_BUS_ENDPOINT=unix:///run/aipc/event-bus.sock \
+    DEVICE_CONTROL_ENDPOINT=unix:///run/aipc/device-control.sock
+
+# Default command - will be overridden by app
+CMD ["python3", "main.py"]

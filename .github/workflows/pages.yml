@@ -1,0 +1,248 @@
+name: Deploy SDK docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./python
+          python -m pip install -r python/docs/requirements.txt
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build documentation
+        run: |
+          mkdir -p _site/python _site/cpp/en _site/cpp/zh
+          python -m sphinx -b html python/docs _site/python/zh
+          python -m sphinx -b html python/docs/en _site/python/en
+          cat > _site/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>NE503 AIPC SDKs</title>
+              <style>
+                :root {
+                  color-scheme: light dark;
+                  font-family: Lato, "proxima-nova", "Helvetica Neue", Arial, sans-serif;
+                }
+                body {
+                  margin: 0;
+                  min-height: 100vh;
+                  background: #fcfcfc;
+                  color: #404040;
+                }
+                main {
+                  width: min(760px, calc(100vw - 32px));
+                  margin: 0 auto;
+                  padding: 48px 0;
+                }
+                h1 {
+                  margin: 0 0 12px;
+                  border-bottom: 1px solid #e1e4e5;
+                  font-size: 32px;
+                  line-height: 1.2;
+                  padding-bottom: 12px;
+                }
+                p {
+                  margin: 0;
+                  color: #555;
+                  line-height: 1.6;
+                }
+                .sdk-list {
+                  border-top: 1px solid #e1e4e5;
+                  margin-top: 28px;
+                }
+                .sdk {
+                  border-bottom: 1px solid #e1e4e5;
+                  padding: 20px 0;
+                }
+                h2 {
+                  margin: 0 0 6px;
+                  font-size: 20px;
+                  font-weight: 600;
+                }
+                .links {
+                  margin-top: 10px;
+                }
+                a {
+                  color: #2980b9;
+                  margin-right: 16px;
+                  text-decoration: none;
+                }
+                a:hover {
+                  text-decoration: underline;
+                }
+                @media (prefers-color-scheme: dark) {
+                  body {
+                    background: #111418;
+                    color: #f4f6f8;
+                  }
+                  p {
+                    color: #b8c0cc;
+                  }
+                  a {
+                    color: #6bb4df;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <main>
+                <h1>NE503 AIPC SDKs</h1>
+                <p>Developer documentation for building applications on the NE503 AIPC edge AI platform.</p>
+                <section class="sdk-list" aria-label="SDK documentation">
+                  <article class="sdk">
+                    <h2>Python SDK</h2>
+                    <p>Client APIs, examples, and guides.</p>
+                    <div class="links">
+                      <a href="./python/en/">English</a>
+                      <a href="./python/zh/">中文</a>
+                    </div>
+                  </article>
+                  <article class="sdk">
+                    <h2>C++ SDK</h2>
+                    <p>Coming soon.</p>
+                    <div class="links">
+                      <a href="./cpp/en/">English</a>
+                      <a href="./cpp/zh/">中文</a>
+                    </div>
+                  </article>
+                </section>
+              </main>
+            </body>
+          </html>
+          HTML
+          cat > _site/python/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>NE503 AIPC Python SDK</title>
+              <style>
+                body { background: #fcfcfc; color: #404040; font-family: Lato, "proxima-nova", "Helvetica Neue", Arial, sans-serif; line-height: 1.6; margin: 48px auto; max-width: 720px; padding: 0 16px; }
+                h1 { border-bottom: 1px solid #e1e4e5; padding-bottom: 12px; }
+                a { color: #2980b9; margin-right: 16px; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+              </style>
+            </head>
+            <body>
+              <h1>NE503 AIPC Python SDK</h1>
+              <p>Select a documentation language.</p>
+              <a href="./en/">English</a>
+              <a href="./zh/">中文</a>
+            </body>
+          </html>
+          HTML
+          cat > _site/cpp/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>NE503 AIPC C++ SDK</title>
+              <style>
+                body { background: #fcfcfc; color: #404040; font-family: Lato, "proxima-nova", "Helvetica Neue", Arial, sans-serif; line-height: 1.6; margin: 48px auto; max-width: 720px; padding: 0 16px; }
+                h1 { border-bottom: 1px solid #e1e4e5; padding-bottom: 12px; }
+                a { color: #2980b9; margin-right: 16px; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+              </style>
+            </head>
+            <body>
+              <h1>NE503 AIPC C++ SDK</h1>
+              <p>Select a documentation language.</p>
+              <a href="./en/">English</a>
+              <a href="./zh/">中文</a>
+            </body>
+          </html>
+          HTML
+          cat > _site/cpp/en/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>NE503 AIPC C++ SDK</title>
+              <style>
+                body { background: #fcfcfc; color: #404040; font-family: Lato, "proxima-nova", "Helvetica Neue", Arial, sans-serif; line-height: 1.6; margin: 48px auto; max-width: 720px; padding: 0 16px; }
+                h1 { border-bottom: 1px solid #e1e4e5; padding-bottom: 12px; }
+                a { color: #2980b9; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+              </style>
+            </head>
+            <body>
+              <p><a href="../../">All SDKs</a> / <a href="../zh/">中文</a></p>
+              <h1>NE503 AIPC C++ SDK</h1>
+              <p>The C++ SDK is planned for a future release. This URL is reserved so documentation links can remain stable.</p>
+            </body>
+          </html>
+          HTML
+          cat > _site/cpp/zh/index.html <<'HTML'
+          <!doctype html>
+          <html lang="zh-CN">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>NE503 AIPC C++ SDK</title>
+              <style>
+                body { background: #fcfcfc; color: #404040; font-family: Lato, "proxima-nova", "Helvetica Neue", Arial, sans-serif; line-height: 1.6; margin: 48px auto; max-width: 720px; padding: 0 16px; }
+                h1 { border-bottom: 1px solid #e1e4e5; padding-bottom: 12px; }
+                a { color: #2980b9; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+              </style>
+            </head>
+            <body>
+              <p><a href="../../">全部 SDK</a> / <a href="../en/">English</a></p>
+              <h1>NE503 AIPC C++ SDK</h1>
+              <p>C++ SDK 计划在后续版本发布。当前页面先保留稳定入口，方便后续补全文档。</p>
+            </body>
+          </html>
+          HTML
+          touch _site/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

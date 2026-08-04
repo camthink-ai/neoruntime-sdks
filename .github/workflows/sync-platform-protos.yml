@@ -1,0 +1,99 @@
+name: Sync platform protobuf definitions
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform_ref:
+        description: Branch, tag, or commit SHA from camthink-ai/ne503-aipc.
+        required: false
+        default: main
+        type: string
+      source_sha:
+        description: Source platform commit SHA for the PR body.
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-platform-protos
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout SDK repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install SDK tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "./python[dev]"
+          python -m pip install --upgrade --force-reinstall \
+            grpcio==1.78.0 \
+            grpcio-tools==1.78.0 \
+            protobuf==6.31.1
+
+      - name: Sync platform protobuf definitions
+        env:
+          PLATFORM_REF: ${{ inputs.platform_ref || 'main' }}
+          PLATFORM_REPO_TOKEN: ${{ secrets.PLATFORM_REPO_TOKEN }}
+        run: scripts/sync_platform_protos.sh
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if git diff --quiet -- proto python/hailo_ipc_sdk/proto; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- proto python/hailo_ipc_sdk/proto
+          fi
+
+      - name: Create sync pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PLATFORM_REF: ${{ inputs.platform_ref || 'main' }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+
+          suffix="${SOURCE_SHA:-$PLATFORM_REF}"
+          suffix="$(printf '%s' "$suffix" | tr -c 'A-Za-z0-9._-' '-')"
+          branch="automation/sync-platform-protos-${suffix:0:40}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add proto python/hailo_ipc_sdk/proto
+          git commit -m "chore: sync platform protobuf definitions" \
+            -m "Source: camthink-ai/ne503-aipc@${SOURCE_SHA:-$PLATFORM_REF}"
+          git push --force-with-lease origin "$branch"
+
+          existing_pr="$(gh pr list --head "$branch" --json url --jq '.[0].url // empty')"
+          if [ -n "$existing_pr" ]; then
+            echo "Pull request already exists: $existing_pr"
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "chore: sync platform protobuf definitions" \
+            --body "Sync protobuf definitions and generated Python stubs from camthink-ai/ne503-aipc@${SOURCE_SHA:-$PLATFORM_REF}."
+
+      - name: Run SDK tests
+        run: python -m pytest -q python/tests

@@ -1,0 +1,90 @@
+# AIPC Platform SDK Base Image
+# Optimized base image for application development
+# Platform: linux/arm64 (Hailo-15, RK3588, Jetson)
+
+FROM python:3.10-slim-bookworm
+
+LABEL maintainer="aipc@example.com" \
+      version="0.2.0" \
+      description="AIPC Platform Python SDK Base Image" \
+      architecture="arm64"
+
+# Set platform
+ARG TARGETPLATFORM=linux/arm64
+ARG BUILDPLATFORM
+
+# Metadata
+ENV SDK_VERSION=0.2.0 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core libraries
+    libgomp1 \
+    libglib2.0-0 \
+    # Image processing
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgl1 \
+    libjpeg62-turbo \
+    libpng16-16 \
+    # Networking
+    ca-certificates \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create SDK installation directory
+WORKDIR /tmp/sdk-install
+
+# Copy SDK source files
+COPY hailo_ipc_sdk ./hailo_ipc_sdk
+COPY setup.py README.md requirements.txt ./
+
+# Install SDK
+RUN pip install --no-cache-dir . && \
+    # Verify installation
+    python3 -c "import hailo_ipc_sdk; print(f'SDK version: {hailo_ipc_sdk.__version__}')" && \
+    # Cleanup
+    cd / && rm -rf /tmp/sdk-install
+
+# Install common dependencies for applications
+RUN pip install --no-cache-dir \
+    numpy>=1.20.0 \
+    Pillow>=9.0.0 \
+    opencv-python-headless>=4.5.0
+
+# Create application directory
+WORKDIR /app
+
+# Create directories for data and logs
+RUN mkdir -p /app/data /app/logs && \
+    chmod 755 /app/data /app/logs
+
+# Create non-root user for security
+RUN groupadd -r -g 1000 appuser && \
+    useradd -r -u 1000 -g appuser -d /app -s /sbin/nologin appuser && \
+    chown -R appuser:appuser /app
+
+# Set default environment variables
+ENV APP_ID=unknown \
+    DEBUG=0 \
+    LOG_LEVEL=INFO \
+    AI_RUNTIME_ENDPOINT=unix:///run/aipc/ai-runtime.sock \
+    EVENT_BUS_ENDPOINT=unix:///run/aipc/event-bus.sock \
+    DEVICE_CONTROL_ENDPOINT=unix:///run/aipc/device-control.sock \
+    SHM_BASE_PATH=/run/aipc/shm
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python3 -c "import hailo_ipc_sdk; import sys; sys.exit(0)" || exit 1
+
+# Switch to non-root user
+USER appuser
+
+# Default command
+CMD ["python3"]
