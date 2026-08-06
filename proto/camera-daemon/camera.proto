@@ -446,6 +446,53 @@ message AutofocusStatusResponse {
   string message = 18;
 }
 
+// ===== Config-field patching (platform-owned scalar runtime knobs) =====
+//
+// set_config_field / get_config_field expose individual scalar fields of the
+// active media-library profile at runtime (HAL_MEDIA_OPS.set_config_field /
+// get_config_field). This is the platform-owned config layer: structured config
+// (streams / OSD / privacy polygons / ISP) still goes through its typed RPCs;
+// config_field is only for scalar knobs with no typed RPC (allow-listed by the
+// daemon), e.g. frontend.hailort.use-hailort-service. Mirrors HAL
+// HalConfigFieldType (hal_v2/include/media/hal_media.h).
+enum ConfigFieldType {
+  CONFIG_FIELD_BOOL = 0;
+  CONFIG_FIELD_INT32 = 1;
+  CONFIG_FIELD_UINT32 = 2;
+  CONFIG_FIELD_FLOAT64 = 3;
+  CONFIG_FIELD_STRING = 4;
+}
+
+message SetConfigFieldRequest {
+  string field_path = 1;          // dotted path, e.g. "frontend.hailort.use-hailort-service"
+  ConfigFieldType type = 2;       // how to interpret value
+  string value = 3;               // value encoded as a string (parsed per type)
+}
+
+message GetConfigFieldRequest {
+  string field_path = 1;
+}
+
+message GetConfigFieldResponse {
+  bool success = 1;
+  string message = 2;
+  ConfigFieldType type = 3;
+  string value = 4;               // current value encoded as a string
+}
+
+// Persisted scalar-config mirror (/data/aipc/etc/media_config_fields.json).
+// The platform layer owns the truth source; on boot each entry is replayed via
+// SetConfigField so it overrides the HAL profile default (replay-on-boot wins
+// over HAL's own profile persistence — resolves the two-writer ambiguity).
+message ConfigFieldValue {
+  ConfigFieldType type = 1;
+  string value = 2;
+}
+
+message MediaConfigFields {
+  map<string, ConfigFieldValue> fields = 1;
+}
+
 // Camera Control Service
 service CameraControl {
   rpc StartOneShotAutofocus(Empty) returns (AutofocusJobResponse);
@@ -557,6 +604,10 @@ service CameraControl {
   // Privacy mask
   rpc GetPrivacyMaskConfig(Empty) returns (PrivacyMaskConfig);
   rpc SetPrivacyMaskConfig(PrivacyMaskConfig) returns (Status);
+
+  // Scalar profile-field runtime knobs (platform-owned config layer; allow-listed).
+  rpc SetConfigField(SetConfigFieldRequest) returns (Status);
+  rpc GetConfigField(GetConfigFieldRequest) returns (GetConfigFieldResponse);
 }
 
 // Device capabilities auto-detected from loaded HAL modules

@@ -315,6 +315,16 @@ class CameraControlStub(object):
                 request_serializer=camera__pb2.PrivacyMaskConfig.SerializeToString,
                 response_deserializer=camera__pb2.Status.FromString,
                 _registered_method=True)
+        self.SetConfigField = channel.unary_unary(
+                '/aipc.camera.CameraControl/SetConfigField',
+                request_serializer=camera__pb2.SetConfigFieldRequest.SerializeToString,
+                response_deserializer=camera__pb2.Status.FromString,
+                _registered_method=True)
+        self.GetConfigField = channel.unary_unary(
+                '/aipc.camera.CameraControl/GetConfigField',
+                request_serializer=camera__pb2.GetConfigFieldRequest.SerializeToString,
+                response_deserializer=camera__pb2.GetConfigFieldResponse.FromString,
+                _registered_method=True)
 
 
 class CameraControlServicer(object):
@@ -684,6 +694,19 @@ class CameraControlServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SetConfigField(self, request, context):
+        """Scalar profile-field runtime knobs (platform-owned config layer; allow-listed).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetConfigField(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CameraControlServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -966,6 +989,16 @@ def add_CameraControlServicer_to_server(servicer, server):
                     servicer.SetPrivacyMaskConfig,
                     request_deserializer=camera__pb2.PrivacyMaskConfig.FromString,
                     response_serializer=camera__pb2.Status.SerializeToString,
+            ),
+            'SetConfigField': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetConfigField,
+                    request_deserializer=camera__pb2.SetConfigFieldRequest.FromString,
+                    response_serializer=camera__pb2.Status.SerializeToString,
+            ),
+            'GetConfigField': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetConfigField,
+                    request_deserializer=camera__pb2.GetConfigFieldRequest.FromString,
+                    response_serializer=camera__pb2.GetConfigFieldResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -2481,6 +2514,60 @@ class CameraControl(object):
             '/aipc.camera.CameraControl/SetPrivacyMaskConfig',
             camera__pb2.PrivacyMaskConfig.SerializeToString,
             camera__pb2.Status.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetConfigField(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/aipc.camera.CameraControl/SetConfigField',
+            camera__pb2.SetConfigFieldRequest.SerializeToString,
+            camera__pb2.Status.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetConfigField(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/aipc.camera.CameraControl/GetConfigField',
+            camera__pb2.GetConfigFieldRequest.SerializeToString,
+            camera__pb2.GetConfigFieldResponse.FromString,
             options,
             channel_credentials,
             insecure,
