@@ -191,6 +191,11 @@ class DeviceControlStub(object):
                 request_serializer=device__pb2.GotoRatioDistanceRequest.SerializeToString,
                 response_deserializer=device__pb2.Status.FromString,
                 _registered_method=True)
+        self.LensGotoZoomRatio = channel.unary_unary(
+                '/aipc.device.DeviceControl/LensGotoZoomRatio',
+                request_serializer=device__pb2.ZoomRatioRequest.SerializeToString,
+                response_deserializer=device__pb2.Status.FromString,
+                _registered_method=True)
         self.SetAfWindows = channel.unary_unary(
                 '/aipc.device.DeviceControl/SetAfWindows',
                 request_serializer=device__pb2.SetAfWindowsRequest.SerializeToString,
@@ -499,6 +504,13 @@ class DeviceControlServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def LensGotoZoomRatio(self, request, context):
+        """FG2009 open-loop zoom positioning
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def SetAfWindows(self, request, context):
         """AF window / measurement
         """
@@ -795,6 +807,11 @@ def add_DeviceControlServicer_to_server(servicer, server):
             'LensGotoRatioDistance': grpc.unary_unary_rpc_method_handler(
                     servicer.LensGotoRatioDistance,
                     request_deserializer=device__pb2.GotoRatioDistanceRequest.FromString,
+                    response_serializer=device__pb2.Status.SerializeToString,
+            ),
+            'LensGotoZoomRatio': grpc.unary_unary_rpc_method_handler(
+                    servicer.LensGotoZoomRatio,
+                    request_deserializer=device__pb2.ZoomRatioRequest.FromString,
                     response_serializer=device__pb2.Status.SerializeToString,
             ),
             'SetAfWindows': grpc.unary_unary_rpc_method_handler(
@@ -1746,6 +1763,33 @@ class DeviceControl(object):
             target,
             '/aipc.device.DeviceControl/LensGotoRatioDistance',
             device__pb2.GotoRatioDistanceRequest.SerializeToString,
+            device__pb2.Status.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def LensGotoZoomRatio(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/aipc.device.DeviceControl/LensGotoZoomRatio',
+            device__pb2.ZoomRatioRequest.SerializeToString,
             device__pb2.Status.FromString,
             options,
             channel_credentials,
