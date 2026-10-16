@@ -35,6 +35,11 @@ jobs:
           python -m pip install -e ./python
           python -m pip install -r python/docs/requirements.txt
 
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
@@ -43,10 +48,15 @@ jobs:
           mkdir -p _site/python
           python -m sphinx -b html python/docs _site/python/zh
           python -m sphinx -b html python/docs/en _site/python/en
+          mkdir -p _site/cpp
+          python -m sphinx -b html cpp/docs _site/cpp/zh
+          (cd cpp && doxygen Doxyfile)
+          mv cpp/doxy-out/html _site/cpp/en
           # Landing + language-selector pages: VitePress-styled templates
           # checked in under site/, matching the NE301 docs look.
           cp site/index.html _site/index.html
           cp site/python-index.html _site/python/index.html
+          cp site/cpp-index.html _site/cpp/index.html
           touch _site/.nojekyll
 
       - name: Upload Pages artifact

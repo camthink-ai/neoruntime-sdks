@@ -31,6 +31,8 @@ The SDK documentation is published at:
 - `https://camthink-ai.github.io/neoruntime-sdks/`
 - `https://camthink-ai.github.io/neoruntime-sdks/python/en/`
 - `https://camthink-ai.github.io/neoruntime-sdks/python/zh/`
+- `https://camthink-ai.github.io/neoruntime-sdks/cpp/en/` (Doxygen API reference)
+- `https://camthink-ai.github.io/neoruntime-sdks/cpp/zh/` (Chinese quick-start)
 
 ## Python SDK
 
@@ -103,6 +105,8 @@ Build local documentation:
 python -m pip install -r python/docs/requirements.txt
 python -m sphinx -b html python/docs /tmp/neoruntime-sdk-docs/python/zh
 python -m sphinx -b html python/docs/en /tmp/neoruntime-sdk-docs/python/en
+python -m sphinx -b html cpp/docs /tmp/neoruntime-sdk-docs/cpp/zh
+(cd cpp && doxygen Doxyfile)   # → cpp/doxy-out/html
 ```
 
 ## Interactive teaching demo

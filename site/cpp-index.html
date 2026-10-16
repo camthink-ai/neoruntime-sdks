@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NeoRuntime C++ SDK</title>
+    <script>
+      // Same localStorage key as VitePress, so the light/dark choice made on
+      // the NE301 docs (same origin) carries over here too.
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem('vitepress-theme-appearance'); } catch (e) {}
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
+    <style>
+      /* VitePress default-theme tokens, taken from the deployed NE301 site. */
+      :root {
+        color-scheme: light;
+        --vp-c-white: #ffffff;
+        --vp-c-bg: #ffffff;
+        --vp-c-bg-soft: #f6f6f7;
+        --vp-c-text-1: #3c3c43;
+        --vp-c-text-2: #67676c;
+        --vp-c-divider: #e2e2e3;
+        --vp-c-gutter: #e2e2e3;
+        --vp-c-brand-1: #3451b2;
+        --vp-c-brand-2: #3a5ccc;
+        --vp-c-brand-3: #5672cd;
+        --vp-c-default-2: #e4e4e9;
+        --vp-c-default-3: #ebebef;
+        --vp-nav-height: 64px;
+        --vp-font-family-base: "Inter", ui-sans-serif, system-ui, sans-serif,
+          "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+      }
+      .dark {
+        color-scheme: dark;
+        --vp-c-bg: #1b1b1f;
+        --vp-c-bg-soft: #202127;
+        --vp-c-text-1: #dfdfd6;
+        --vp-c-text-2: #98989f;
+        --vp-c-divider: #2e2e32;
+        --vp-c-gutter: #000000;
+        --vp-c-brand-1: #a8b1ff;
+        --vp-c-brand-2: #5c73e7;
+        --vp-c-brand-3: #3e63dd;
+        --vp-c-default-2: #414853;
+        --vp-c-default-3: #32363f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--vp-c-bg);
+        color: var(--vp-c-text-1);
+        font-family: var(--vp-font-family-base);
+        font-size: 16px;
+        line-height: 24px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      main { flex: 1; }
+
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        height: var(--vp-nav-height);
+        border-bottom: 1px solid var(--vp-c-gutter);
+        background: var(--vp-c-bg);
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        max-width: calc(1440px - 64px);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--vp-c-text-1);
+        text-decoration: none;
+      }
+      .nav-right { display: flex; align-items: center; }
+      .menu-link {
+        padding: 0 12px;
+        line-height: var(--vp-nav-height);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--vp-c-text-2);
+        text-decoration: none;
+        transition: color 0.25s;
+      }
+      .menu-link:hover { color: var(--vp-c-brand-1); }
+      .divider { width: 1px; height: 24px; margin: 0 12px; background: var(--vp-c-divider); }
+      .nav-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--vp-c-text-2);
+        cursor: pointer;
+        transition: color 0.25s;
+      }
+      .nav-action:hover { color: var(--vp-c-text-1); }
+      .icon-sun { display: block; }
+      .icon-moon { display: none; }
+      .dark .icon-sun { display: none; }
+      .dark .icon-moon { display: block; }
+
+      .content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 96px 24px;
+      }
+      .card {
+        max-width: 576px;
+        width: 100%;
+        padding: 32px;
+        border-radius: 12px;
+        background: var(--vp-c-bg-soft);
+        text-align: center;
+      }
+      .card h1 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; }
+      .card p { margin: 8px 0 0; font-size: 14px; line-height: 24px; font-weight: 500; color: var(--vp-c-text-2); }
+      .card .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 24px; }
+      .vp-button {
+        display: inline-block;
+        padding: 0 20px;
+        border: 1px solid transparent;
+        border-radius: 20px;
+        line-height: 38px;
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-decoration: none;
+        transition: color 0.25s, border-color 0.25s, background-color 0.25s;
+      }
+      .vp-button.brand { background: var(--vp-c-brand-3); color: var(--vp-c-white); }
+      .vp-button.brand:hover { background: var(--vp-c-brand-2); }
+      .vp-button.alt { background: var(--vp-c-default-3); color: var(--vp-c-text-1); }
+      .vp-button.alt:hover { background: var(--vp-c-default-2); }
+
+      .footer {
+        padding: 32px 24px;
+        border-top: 1px solid var(--vp-c-gutter);
+        background: var(--vp-c-bg);
+      }
+      .footer-inner { max-width: 1440px; margin: 0 auto; text-align: center; }
+      .footer p { margin: 0; font-size: 14px; line-height: 24px; font-weight: 500; color: var(--vp-c-text-2); }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-inner">
+        <a class="brand" href="../">NeoRuntime SDKs</a>
+        <div class="nav-right">
+          <a class="menu-link" href="../">All SDKs</a>
+          <span class="divider"></span>
+          <button class="nav-action" type="button" aria-label="Toggle dark mode" onclick="toggleAppearance()">
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </button>
+          <a class="nav-action" href="https://github.com/camthink-ai/neoruntime-sdks" target="_blank" rel="noreferrer" aria-label="GitHub">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="card">
+        <h1>NeoRuntime C++ SDK</h1>
+        <p>Quick-start &amp; module overview in Chinese · API reference (Doxygen) in English.</p>
+        <div class="actions">
+          <a class="vp-button brand" href="./zh/">简体中文</a>
+          <a class="vp-button alt" href="./en/">English API</a>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <p class="message">Released under the MIT License.</p>
+        <p class="copyright">Copyright © 2025-2026 CamThink</p>
+      </div>
+    </footer>
+
+    <script>
+      function toggleAppearance() {
+        var dark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('vitepress-theme-appearance', dark ? 'dark' : 'light'); } catch (e) {}
+      }
+    </script>
+  </body>
+</html>
