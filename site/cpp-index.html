@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NeoRuntime C++ SDK</title>
+    <script>
+      // Same localStorage key as VitePress, so the light/dark choice made on
+      // the NE301 docs (same origin) carries over here too.
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem('vitepress-theme-appearance'); } catch (e) {}
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
+    <style>
+      /* VitePress default-theme tokens, taken from the deployed NE301 site. */
+      :root {
+        color-scheme: light;
+        --vp-c-white: #ffffff;
+        --vp-c-bg: #ffffff;
+        --vp-c-bg-soft: #f6f6f7;
+        --vp-c-bg-mute: #f2f2f3;
+        --vp-c-text-1: #3c3c43;
+        --vp-c-text-2: #67676c;
+        --vp-c-text-3: #8e8e93;
+        --vp-c-divider: #e2e2e3;
+        --vp-c-gutter: #e2e2e3;
+        --vp-c-brand-1: #3451b2;
+        --vp-c-brand-2: #3a5ccc;
+        --vp-c-brand-3: #5672cd;
+        --vp-c-brand-soft: rgba(52, 81, 178, 0.14);
+        --vp-c-default-2: #e4e4e9;
+        --vp-c-default-3: #ebebef;
+        --vp-nav-height: 64px;
+        --vp-font-family-base: "Inter", ui-sans-serif, system-ui, sans-serif,
+          "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        --vp-font-family-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono",
+          Menlo, Consolas, monospace;
+      }
+      .dark {
+        color-scheme: dark;
+        --vp-c-bg: #1b1b1f;
+        --vp-c-bg-soft: #202127;
+        --vp-c-bg-mute: #262629;
+        --vp-c-text-1: #dfdfd6;
+        --vp-c-text-2: #98989f;
+        --vp-c-text-3: #7d7d83;
+        --vp-c-divider: #2e2e32;
+        --vp-c-gutter: #000000;
+        --vp-c-brand-1: #a8b1ff;
+        --vp-c-brand-2: #5c73e7;
+        --vp-c-brand-3: #3e63dd;
+        --vp-c-brand-soft: rgba(60, 99, 221, 0.28);
+        --vp-c-default-2: #414853;
+        --vp-c-default-3: #32363f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--vp-c-bg);
+        color: var(--vp-c-text-1);
+        font-family: var(--vp-font-family-base);
+        font-size: 16px;
+        line-height: 24px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      main { flex: 1; }
+      .container { max-width: 1152px; margin: 0 auto; padding: 0 24px; }
+
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        height: var(--vp-nav-height);
+        border-bottom: 1px solid var(--vp-c-gutter);
+        background: var(--vp-c-bg);
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--vp-c-text-1);
+        text-decoration: none;
+      }
+      .nav-right { display: flex; align-items: center; }
+      .menu-link {
+        padding: 0 12px;
+        line-height: var(--vp-nav-height);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--vp-c-text-2);
+        text-decoration: none;
+        transition: color 0.25s;
+      }
+      .menu-link:hover { color: var(--vp-c-brand-1); }
+      .divider { width: 1px; height: 24px; margin: 0 12px; background: var(--vp-c-divider); }
+      .nav-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--vp-c-text-2);
+        cursor: pointer;
+        transition: color 0.25s;
+      }
+      .nav-action:hover { color: var(--vp-c-text-1); }
+      .icon-sun { display: block; }
+      .icon-moon { display: none; }
+      .dark .icon-sun { display: none; }
+      .dark .icon-moon { display: block; }
+
+      /* Hero */
+      .hero { padding: 72px 0 40px; text-align: center; }
+      .eyebrow {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--vp-c-brand-1);
+      }
+      .hero h1 {
+        margin: 12px 0 0;
+        font-size: clamp(32px, 5vw, 48px);
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .hero .tagline {
+        margin: 14px auto 0;
+        max-width: 46em;
+        font-size: 17px;
+        color: var(--vp-c-text-2);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      .chip {
+        font-family: var(--vp-font-family-mono);
+        font-size: 12.5px;
+        font-weight: 600;
+        padding: 3px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--vp-c-divider);
+        background: var(--vp-c-bg-soft);
+        color: var(--vp-c-text-2);
+      }
+      .chip.brand { color: var(--vp-c-brand-1); border-color: transparent; background: var(--vp-c-brand-soft); }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 26px;
+      }
+      .vp-button {
+        display: inline-block;
+        padding: 0 22px;
+        border: 1px solid transparent;
+        border-radius: 20px;
+        line-height: 40px;
+        font-size: 14.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-decoration: none;
+        transition: color 0.25s, border-color 0.25s, background-color 0.25s;
+      }
+      .vp-button.brand { background: var(--vp-c-brand-3); color: var(--vp-c-white); }
+      .vp-button.brand:hover { background: var(--vp-c-brand-2); }
+      .vp-button.alt { background: var(--vp-c-default-3); color: var(--vp-c-text-1); }
+      .vp-button.alt:hover { background: var(--vp-c-default-2); }
+
+      /* Feature grid */
+      .features { padding: 24px 0 8px; }
+      .section-title {
+        margin: 40px 0 6px;
+        font-size: 22px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .section-sub {
+        margin: 0 auto 26px;
+        max-width: 40em;
+        font-size: 14px;
+        color: var(--vp-c-text-2);
+        text-align: center;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        padding: 18px 20px;
+        border: 1px solid var(--vp-c-divider);
+        border-radius: 10px;
+        background: var(--vp-c-bg-soft);
+        transition: border-color 0.25s;
+      }
+      .card:hover { border-color: var(--vp-c-brand-3); }
+      .card h3 { margin: 0 0 4px; font-size: 15.5px; font-weight: 700; }
+      .card p { margin: 0; font-size: 13.5px; line-height: 21px; color: var(--vp-c-text-2); }
+      .card .tag {
+        display: inline-block;
+        margin-top: 10px;
+        font-family: var(--vp-font-family-mono);
+        font-size: 11.5px;
+        color: var(--vp-c-brand-1);
+      }
+
+      /* Code sample */
+      .codecard {
+        margin: 30px 0 8px;
+        border: 1px solid var(--vp-c-divider);
+        border-radius: 12px;
+        background: var(--vp-c-bg-soft);
+        overflow: hidden;
+      }
+      .codecard .bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--vp-c-divider);
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--vp-c-text-3);
+      }
+      .codecard .bar .lang {
+        margin-left: auto;
+        font-family: var(--vp-font-family-mono);
+        font-weight: 400;
+      }
+      .codecard pre {
+        margin: 0;
+        padding: 16px 18px;
+        overflow-x: auto;
+        font-family: var(--vp-font-family-mono);
+        font-size: 13px;
+        line-height: 21px;
+        color: var(--vp-c-text-1);
+      }
+      .k { color: var(--vp-c-brand-1); }
+      .s { color: #50a14f; }
+      .dark .s { color: #86c59b; }
+      .c { color: var(--vp-c-text-3); font-style: italic; }
+
+      /* Quick links */
+      .quicklinks {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 26px;
+        margin: 34px 0 10px;
+        font-size: 14px;
+      }
+      .quicklinks a {
+        color: var(--vp-c-brand-1);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+      }
+      .quicklinks a:hover { border-bottom-color: currentColor; }
+
+      .footer {
+        padding: 32px 24px;
+        border-top: 1px solid var(--vp-c-gutter);
+        background: var(--vp-c-bg);
+      }
+      .footer-inner { max-width: 1440px; margin: 0 auto; text-align: center; }
+      .footer p { margin: 0; font-size: 14px; line-height: 24px; font-weight: 500; color: var(--vp-c-text-2); }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-inner container">
+        <a class="brand" href="../">NeoRuntime SDKs</a>
+        <div class="nav-right">
+          <a class="menu-link" href="../">All SDKs</a>
+          <span class="divider"></span>
+          <button class="nav-action" type="button" aria-label="Toggle dark mode" onclick="toggleAppearance()">
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </button>
+          <a class="nav-action" href="https://github.com/camthink-ai/neoruntime-sdks" target="_blank" rel="noreferrer" aria-label="GitHub">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div class="eyebrow">NE503 · Edge AI Camera Platform</div>
+        <h1>NeoRuntime C++ SDK</h1>
+        <p class="tagline">
+          Python SDK 的完整 C++17 镜像——同一套平台能力与传输协议，
+          numpy 换成 <code>cv::Mat</code>。应用跑在设备容器内，经本地 UDS
+          直连平台守护进程。
+        </p>
+        <div class="chips">
+          <span class="chip brand">cpp-v0.8.0</span>
+          <span class="chip">镜像 Python 0.8.1</span>
+          <span class="chip">C++17 · CMake ≥ 3.20 · vcpkg</span>
+          <span class="chip">375 tests</span>
+          <span class="chip">MIT</span>
+        </div>
+        <div class="cta-row">
+          <a class="vp-button brand" href="./zh/">中文速览 &amp; 模块手册</a>
+          <a class="vp-button alt" href="./en/">English API (Doxygen)</a>
+        </div>
+      </section>
+
+      <h2 class="section-title">平台能力，一个头文件一个客户端</h2>
+      <p class="section-sub">28 个公共头文件（proto-free），覆盖推理、零拷贝取流、DSP 硬件作业、硬件 overlay 与整流水线调度。</p>
+      <section class="grid">
+        <div class="card">
+          <h3>AI 推理</h3>
+          <p>单次 / 批量 / 流式（时延与偏移 EMA、丢帧计数、连续失败上限），模型注册与统计，GenAI 流式。</p>
+          <span class="tag">inference.hpp</span>
+        </div>
+        <div class="card">
+          <h3>零拷贝取流</h3>
+          <p><code>SCM_RIGHTS</code> fd 传递的 DMA-BUF 帧、H.264/H.265 编码流、PCM/AAC 音频流。</p>
+          <span class="tag">fd_client.hpp · encoded.hpp</span>
+        </div>
+        <div class="card">
+          <h3>DSP 硬件作业</h3>
+          <p>缓冲池 + <code>resize / crop / convert / blend / JPEG 编码</code>，buffer_id 零读回链，CPU 自动回退。</p>
+          <span class="tag">dsp.hpp · accel.hpp</span>
+        </div>
+        <div class="card">
+          <h3>硬件 overlay</h3>
+          <p>检测框与区域多边形画在设备侧，ttl / session / 绑帧，不占应用 CPU。</p>
+          <span class="tag">overlay.hpp</span>
+        </div>
+        <div class="card">
+          <h3>整流水线</h3>
+          <p><code>StreamPipeline</code>：订阅 → 推理 → overlay → 结果队列，像素全程留在设备上。</p>
+          <span class="tag">stream_pipeline.hpp</span>
+        </div>
+        <div class="card">
+          <h3>设备与事件</h3>
+          <p>灯光 / 云台 / 对焦 / GPIO / RS485 / Wiegand / 自动对焦；事件总线发布订阅批通配符。</p>
+          <span class="tag">device.hpp · events.hpp</span>
+        </div>
+      </section>
+
+      <div class="codecard">
+        <div class="bar">
+          <span>流式人形检测 + 事件发布</span>
+          <span class="lang">C++17</span>
+        </div>
+<pre><span class="k">InferenceClient</span> inference;
+<span class="k">EventClient</span>    events;
+
+<span class="k">auto</span> stream = inference.subscribe(<span class="s">"cam0_main"</span>, <span class="s">"person_v1"</span>, <span class="c">/*fps=*/</span>10);
+<span class="k">while</span> (<span class="k">auto</span> item = stream.next()) {
+    <span class="k">const auto</span>&amp; result = item-&gt;second;
+    <span class="k">if</span> (!result.objects.empty())
+        events.publish(<span class="s">"app/alert"</span>, {{<span class="s">"count"</span>, result.objects.size()}});
+}</pre>
+      </div>
+
+      <div class="quicklinks">
+        <a href="./zh/quickstart.html">快速上手（tarball / 源码构建）</a>
+        <a href="./zh/learning-path.html">学习路径</a>
+        <a href="./zh/api/inference.html">逐模块手册</a>
+        <a href="https://github.com/camthink-ai/neoruntime-sdks/releases/tag/cpp-v0.8.0">Release tarball (arm64)</a>
+        <a href="https://github.com/camthink-ai/neoruntime-sdks/blob/main/cpp/CHANGELOG.md">CHANGELOG</a>
+        <a href="../python/zh/">Python SDK 手册</a>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <p class="message">Released under the MIT License.</p>
+        <p class="copyright">Copyright © 2025-2026 CamThink</p>
+      </div>
+    </footer>
+
+    <script>
+      function toggleAppearance() {
+        var dark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('vitepress-theme-appearance', dark ? 'dark' : 'light'); } catch (e) {}
+      }
+    </script>
+  </body>
+</html>
