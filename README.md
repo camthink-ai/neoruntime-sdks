@@ -73,11 +73,13 @@ Generated wheels are written to `python/dist/` and should not be committed.
 
 The repository also builds release artifacts automatically with GitHub Actions:
 
-- Pull requests, pushes to `main`, and manual runs build and upload Python
-  distributions (wheel + sdist) as an artifact named `python-sdk-dist`.
-- Tags matching `v*` build the Python distributions, attach them to a GitHub
-  Release, upload them to TestPyPI, and then to PyPI once the protected `pypi`
-  environment is approved.
+- Pull requests and relevant pushes to `main` build and test the Python
+  distributions without retaining a workflow artifact.
+- Tags matching `v*` and manual runs upload the distributions (wheel + sdist)
+  as an artifact named `python-sdk-dist`.
+- Tags matching `v*` also attach the distributions to a GitHub Release, upload
+  them to TestPyPI, and then to PyPI once the protected `pypi` environment is
+  approved.
 - Manual runs can also publish a GitHub Release, TestPyPI, or PyPI when the
   corresponding dispatch inputs are enabled.
 

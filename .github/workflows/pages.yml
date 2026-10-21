@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/pages.yml"
+      - "python/docs/**"
+      - "python/neoruntime_ipc_sdk/**"
+      - "python/setup.py"
+      - "cpp/docs/**"
+      - "cpp/Doxyfile"
+      - "cpp/include/**"
+      - "site/**"
   workflow_dispatch:
 
 permissions:
@@ -17,14 +26,14 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -36,7 +45,7 @@ jobs:
           python -m pip install -r python/docs/requirements.txt
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Build documentation
         run: |
@@ -50,13 +59,13 @@ jobs:
           touch _site/.nojekyll
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -64,4 +73,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

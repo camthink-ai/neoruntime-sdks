@@ -745,8 +745,9 @@ Do not commit files from `dist/`; publish them as release artifacts instead.
 ### Automated Wheel Builds
 
 In the public `neoruntime-sdks` repository, GitHub Actions builds and tests
-the wheel and sdist for pull requests, pushes to `main`, and manual workflow
-runs, uploading them as a workflow artifact named `python-sdk-dist`.
+the wheel and sdist for pull requests, relevant pushes to `main`, and manual
+workflow runs. Pull request and `main` builds do not retain a workflow artifact;
+tags matching `v*` and manual runs upload one named `python-sdk-dist`.
 
 Pushing a `v*` tag (or running the workflow manually with publishing enabled)
 creates a GitHub Release with the distributions attached and publishes to
