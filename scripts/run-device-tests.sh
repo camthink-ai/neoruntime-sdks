@@ -66,6 +66,26 @@ else
     RSYNC_SSH="ssh -p $PORT -o BatchMode=yes -o ConnectTimeout=8"
 fi
 RSYNC=(rsync -e "$RSYNC_SSH")
+# 部分新刷 OS 镜像设备端没有 rsync;探测一次,缺失则部署/取回走 tar-over-ssh
+# (语义等价:push 前清旧测试目录,拉取只取 report-test_*.json)
+DEV_HAS_RSYNC="$("${SSH[@]}" 'command -v rsync 2>/dev/null || true')"
+push_tree() { # $1=本地目录(尾斜杠) $2=target:远端目录
+    if [ -n "$DEV_HAS_RSYNC" ]; then
+        "${RSYNC[@]}" -a --delete "$1" "$2"
+    else
+        local remote="${2#*:}"
+        "${SSH[@]}" "rm -rf '$remote'/* && mkdir -p '$remote'" >/dev/null
+        ( cd "$1" && tar czf - . ) | "${SSH[@]}" "tar xzf - -C '$remote'"
+    fi
+}
+pull_reports() { # $1=target:远端glob $2=本地目录
+    if [ -n "$DEV_HAS_RSYNC" ]; then
+        "${RSYNC[@]}" -a "$1" "$2"
+    else
+        "${SSH[@]}" "cd $DEVICE_BASE && tar czf - report-test_*.json" \
+            | tar xzf - -C "$2"
+    fi
+}
 DEVICE_BASE=/data/sdk-test
 DEVICE_VENV=/data/venv-sdk
 
@@ -84,9 +104,12 @@ fi
 if [ "$MODE" = perf ] && ! "${SSH[@]}" "test -f /data/aipc-data/models/yolo_world_v2s.hef"; then
     echo "警告: 设备缺 /data/aipc-data/models/yolo_world_v2s.hef — 推理/soak 模块将 NA(部署预案:从主设备拷贝精选 HEF)" >&2
 fi
-"${RSYNC[@]}" -a --delete \
-    "$DEVICE_TESTS_DIR"/ "$TARGET:$DEVICE_BASE/"
-"${RSYNC[@]}" -a "$WHEEL" "$TARGET:$DEVICE_BASE/"
+push_tree "$DEVICE_TESTS_DIR"/ "$TARGET:$DEVICE_BASE/"
+if [ -n "$DEV_HAS_RSYNC" ]; then
+    "${RSYNC[@]}" -a "$WHEEL" "$TARGET:$DEVICE_BASE/"
+else
+    "${SSH[@]}" "cat > $DEVICE_BASE/$(basename "$WHEEL")" < "$WHEEL"
+fi
 
 if ! "${SSH[@]}" "test -x $DEVICE_VENV/bin/python"; then
     echo "错误: 设备缺 $DEVICE_VENV — 备用设备需先从主设备中继整个 venv 到同路径" >&2
@@ -179,8 +202,7 @@ echo "== [5/5] 取回报告并合并 =="
 # report-test_*.json 会被 merge glob 一起吞进本次报告。
 mkdir -p "$OUTPUT_DIR/device-reports"
 rm -f "$OUTPUT_DIR"/device-reports/report-test_*.json
-"${RSYNC[@]}" -a \
-    "$TARGET:$DEVICE_BASE/report-test_*.json" "$OUTPUT_DIR/device-reports/"
+pull_reports "$TARGET:$DEVICE_BASE/report-test_*.json" "$OUTPUT_DIR/device-reports/"
 MERGE_RC=0
 python3 - "$OUTPUT_DIR/device-reports" "$OUTPUT_DIR/$REPORT_JSON" <<'EOF' || MERGE_RC=$?
 import glob
