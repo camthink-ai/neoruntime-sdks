@@ -183,7 +183,8 @@ for ((i = 0; i < ${#MODULES[@]}; i += 2)); do
     BUDGET="${MODULES[$((i + 1))]}"
     echo "-- 模块 $MOD (预算 ${BUDGET}s)"
     MOD_RC=0
-    MOD_CMD="env NEORUNTIME_DEVICE=1 $PERF_ENV_STR $DEVICE_VENV/bin/python \
+    # SDK_EXPECTED_VERSION: test_10 断言被测 SDK 版本用;与 [3/5] 的硬校验同源
+    MOD_CMD="env NEORUNTIME_DEVICE=1 SDK_EXPECTED_VERSION=$WHEEL_VERSION $PERF_ENV_STR $DEVICE_VENV/bin/python \
 $DEVICE_BASE/run_device_tests.py $DEVICE_BASE/report-$MOD.json $MOD"
     if [ -n "$TIMEOUT_BIN" ]; then
         MOD_CMD="$TIMEOUT_BIN -k 30 $BUDGET $MOD_CMD"
