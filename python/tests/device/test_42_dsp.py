@@ -202,6 +202,46 @@ class T07EncodeJpeg(_DspArea):
         self.assertEqual(jpeg[:2], b"\xff\xd8", "not a JPEG (no SOI)")
         self.assertGreater(len(jpeg), 100)
 
+    def test_02_encode_jpeg_hw_after_pipeline_reinit(self):
+        """F5 regression: the standalone JPEG HW encoder must survive a
+        rotation_full_reinit. set_transform(rotation±1) destructs and
+        rebuilds medialib, which nulls the plugin's interactor slot; a
+        re-created JPEG ctx then re-registers the standalone interactor
+        and, on unfixed builds, trips the vendor registry uniqueness
+        check ("ConfigManagerInteractor::create failed (1)") forever —
+        only a daemon restart revived it. The 128x128 shot forces a ctx
+        rebuild (the daemon caches per WxH:fmt:q) instead of riding the
+        64x64 cache from test_01."""
+        from neoruntime_ipc_sdk import CameraClient, TransformConfig
+
+        self.mark("DspClient.encode_jpeg_hw after pipeline reinit")
+        warm = self._run(self.client.encode_jpeg_hw, _nv12(W, H), 80,
+                         fmt=FMT, label="encode_jpeg_hw_warm")
+        self.assertEqual(warm[:2], b"\xff\xd8")
+
+        camera = CameraClient()
+        try:
+            original = camera.get_transform()
+            camera.set_transform(TransformConfig(
+                rotation=(original.rotation + 1) % 4, flip=original.flip,
+                dewarp=original.dewarp, grayscale=original.grayscale))
+            camera.set_transform(original)
+        finally:
+            camera.close()
+        self.evidence(restored_rotation=original.rotation)
+
+        # Fresh client: the reinit restarted the fd publisher, so sockets
+        # opened before it are dead (BrokenPipe on next exchange).
+        fresh = DspClient()
+        try:
+            jpeg = self._run(fresh.encode_jpeg_hw, _nv12(128, 128), 80,
+                             fmt=FMT, label="encode_jpeg_hw_after_reinit")
+        finally:
+            fresh.close()
+        self.evidence(bytes=len(jpeg), magic=jpeg[:2].hex())
+        self.assertEqual(jpeg[:2], b"\xff\xd8", "not a JPEG (no SOI)")
+        self.assertGreater(len(jpeg), 100)
+
 
 if __name__ == "__main__":
     unittest.main()

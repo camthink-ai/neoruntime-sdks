@@ -22,8 +22,14 @@ class T01SdkIdentity(DeviceTestCase):
 
     def test_01_version(self):
         self.mark("__version__")
-        self.evidence(version=neoruntime_ipc_sdk.__version__)
-        self.assertEqual(neoruntime_ipc_sdk.__version__, "0.7.4")
+        expected = os.environ.get("SDK_EXPECTED_VERSION")
+        self.evidence(version=neoruntime_ipc_sdk.__version__,
+                      expected=expected or "(unset)")
+        if not expected:
+            self.skipTest(
+                "SDK_EXPECTED_VERSION not set — run via run-device-tests.sh, "
+                "which pins it to the wheel version it installs")
+        self.assertEqual(neoruntime_ipc_sdk.__version__, expected)
 
     def test_02_module_path(self):
         self.mark("package import")
