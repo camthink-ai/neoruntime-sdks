@@ -1,0 +1,37 @@
+# Doxygen configuration for the NeoRuntime C++ SDK public API reference.
+#
+# Built by .github/workflows/pages.yml as `(cd cpp && doxygen Doxyfile)`;
+# the output at doxy-out/html is published as /cpp/en/ on the docs site.
+# Paths are relative to this directory — always run doxygen from cpp/.
+
+PROJECT_NAME           = "NeoRuntime C++ SDK"
+PROJECT_BRIEF          = "C++17 client SDK for the NeoRuntime edge-AI camera platform"
+
+INPUT                  = include/neoruntime_ipc_sdk
+FILE_PATTERNS          = *.hpp
+RECURSIVE              = NO
+
+# The public headers are comment-light: list every symbol, not just the
+# documented ones, so the reference covers the full mirrored API surface.
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+EXTRACT_ANON_NSPACES  = NO
+
+# Keep the page order close to the header declaration order.
+SORT_MEMBER_DOCS       = NO
+SORT_MEMBERS_CTORS_1ST = YES
+SORT_BRIEF_DOCS        = NO
+
+FULL_PATH_NAMES        = NO
+
+OUTPUT_DIRECTORY       = doxy-out
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+GENERATE_LATEX         = NO
+
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_NO_PARAMDOC       = NO
