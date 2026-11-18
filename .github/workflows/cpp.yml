@@ -34,10 +34,6 @@ on:
       - "proto/**"
       - ".github/workflows/cpp.yml"
   pull_request:
-    paths:
-      - "cpp/**"
-      - "proto/**"
-      - ".github/workflows/cpp.yml"
   workflow_dispatch:
     inputs:
       package_cpp:
@@ -57,19 +53,71 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: cpp-sdk-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect C++ SDK scope
+    runs-on: ubuntu-24.04
+    outputs:
+      cpp: ${{ steps.filter.outputs.cpp }}
+
+    steps:
+      - name: Classify changed files
+        id: filter
+        uses: actions/github-script@v9
+        with:
+          script: |
+            let cppNeeded = context.eventName !== 'pull_request';
+
+            if (context.eventName === 'pull_request') {
+              try {
+                const files = await github.paginate(github.rest.pulls.listFiles, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.payload.pull_request.number,
+                  per_page: 100,
+                });
+                const paths = files.flatMap((file) =>
+                  file.previous_filename
+                    ? [file.filename, file.previous_filename]
+                    : [file.filename],
+                );
+                cppNeeded = files.length >= 3000 || paths.some((path) => {
+                  if (path === '.github/workflows/cpp.yml') return true;
+                  if (path.startsWith('proto/')) return true;
+                  if (!path.startsWith('cpp/')) return false;
+                  return !(
+                    path.endsWith('.md') ||
+                    path === 'cpp/Doxyfile' ||
+                    path.startsWith('cpp/docs/')
+                  );
+                });
+              } catch (error) {
+                core.warning(`Unable to classify changed files: ${error.message}`);
+                cppNeeded = true;
+              }
+            }
+
+            core.setOutput('cpp', cppNeeded ? 'true' : 'false');
+            await core.summary
+              .addHeading('C++ SDK build scope', 3)
+              .addRaw(cppNeeded ? 'Build and test required.' : 'No C++ build required.')
+              .write();
+
   native:
     name: Build & test (x86_64)
+    needs: changes
+    if: needs.changes.result != 'success' || needs.changes.outputs.cpp == 'true'
     runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up vcpkg
         run: |
@@ -79,21 +127,13 @@ jobs:
           echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
 
       - name: Cache vcpkg binary cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/vcpkg/archives
           key: vcpkg-x64-${{ runner.os }}-${{ hashFiles('cpp/vcpkg.json') }}
           restore-keys: |
             vcpkg-x64-${{ runner.os }}-
-
-      - name: Cache CMake build
-        uses: actions/cache@v4
-        with:
-          path: build-x64
-          key: cmake-x64-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            cmake-x64-${{ runner.os }}-
 
       - name: Configure (vcpkg manifest mode)
         run: |
@@ -118,7 +158,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate release version
         env:
@@ -170,15 +210,21 @@ jobs:
 
   cross-compile:
     name: Cross-compile (aarch64)
+    needs: changes
     runs-on: ubuntu-24.04
     # Opt-in on branch pushes: needs a provisioned aarch64 dependency source
     # (vcpkg arm64 triplet built with the aarch64 cross-toolchain, or a Yocto
     # sysroot). cpp-v* release tags and manual packaging always run it.
-    if: startsWith(github.ref, 'refs/tags/cpp-v') || vars.NE503_ENABLE_AARCH64 == 'true' || (github.event_name == 'workflow_dispatch' && (inputs.package_cpp || inputs.publish_release))
+    if: >-
+      startsWith(github.ref, 'refs/tags/cpp-v') ||
+      (vars.NE503_ENABLE_AARCH64 == 'true' &&
+        (github.event_name != 'pull_request' || needs.changes.outputs.cpp == 'true')) ||
+      (github.event_name == 'workflow_dispatch' &&
+        (inputs.package_cpp || inputs.publish_release))
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install aarch64 cross-toolchain
         run: |
@@ -195,7 +241,7 @@ jobs:
           echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
 
       - name: Cache vcpkg binary cache (arm64)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/vcpkg/archives
@@ -237,11 +283,12 @@ jobs:
           file build-cpp-package/stage/ne503-aipc-cpp-sdk-*/bin/person_detection | tee /dev/stderr | grep -q 'ARM aarch64'
 
       - name: Upload arm64 SDK tarball
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cpp-sdk-dist-arm64
           path: dist/*.tar.gz
           if-no-files-found: error
+          retention-days: ${{ startsWith(github.ref, 'refs/tags/') && 1 || 7 }}
 
   release:
     needs:
@@ -255,10 +302,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download arm64 SDK tarball
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: cpp-sdk-dist-arm64
           path: dist
@@ -278,6 +325,7 @@ jobs:
               tag_name="cpp-v$version"
             fi
           fi
+
           case "$tag_name" in
             cpp-v*) ;;
             *) tag_name="cpp-v$tag_name" ;;
@@ -305,4 +353,27 @@ jobs:
           - The C++ version line is independent of the Python SDK; this release mirrors the Python SDK $mirror API surface (see \`cpp/include/neoruntime_ipc_sdk/version.hpp\`).
           - Built against the platform protos and firmware contract of this tag; see \`cpp/CHANGELOG.md\` for the dependency contract.
           - Building from source requires the repository root \`proto/\` (protoc + grpc_cpp_plugin regenerate the stubs)."
+          fi
+
+  cpp-ci:
+    name: C++ SDK CI
+    needs:
+      - changes
+      - native
+    if: always()
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Verify C++ SDK jobs
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
+          CPP_NEEDED: ${{ needs.changes.outputs.cpp }}
+        run: |
+          set -euo pipefail
+          test "$CHANGES_RESULT" = success
+          if [ "$CPP_NEEDED" = true ]; then
+            test "$NATIVE_RESULT" = success
+          else
+            test "$NATIVE_RESULT" = skipped
           fi

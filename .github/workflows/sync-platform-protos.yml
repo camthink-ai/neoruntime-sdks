@@ -23,16 +23,19 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout SDK repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          # A repository-scoped PAT or GitHub App token lets the generated PR
+          # trigger pull_request checks. GITHUB_TOKEN remains a safe fallback.
+          token: ${{ secrets.REPO_AUTOMATION_TOKEN || github.token }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -62,10 +65,13 @@ jobs:
             git diff --stat -- proto python/neoruntime_ipc_sdk/proto
           fi
 
+      - name: Run SDK tests
+        run: python -m pytest -q python/tests
+
       - name: Create sync pull request
         if: steps.changes.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.REPO_AUTOMATION_TOKEN || github.token }}
           PLATFORM_REF: ${{ inputs.platform_ref || 'main' }}
           SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
@@ -94,6 +100,3 @@ jobs:
             --head "$branch" \
             --title "chore: sync platform protobuf definitions" \
             --body "Sync protobuf definitions and generated Python stubs from camthink-ai/neoruntime@${SOURCE_SHA:-$PLATFORM_REF}."
-
-      - name: Run SDK tests
-        run: python -m pytest -q python/tests
