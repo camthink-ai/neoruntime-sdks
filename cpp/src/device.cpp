@@ -70,6 +70,30 @@ std::optional<DeviceEvent> DeviceEventStream::next() {
 }
 
 // ---------------------------------------------------------------------------
+// Rs485RxEventStream
+// ---------------------------------------------------------------------------
+struct Rs485RxEventStream::Impl {
+    grpc::ClientContext ctx;
+    std::unique_ptr<grpc::ClientReader<pb::Rs485RxEvent>> reader;
+};
+
+Rs485RxEventStream::Rs485RxEventStream() : impl_(std::make_unique<Impl>()) {}
+Rs485RxEventStream::~Rs485RxEventStream() = default;
+Rs485RxEventStream::Rs485RxEventStream(Rs485RxEventStream&&) noexcept = default;
+Rs485RxEventStream& Rs485RxEventStream::operator=(Rs485RxEventStream&&) noexcept = default;
+
+std::optional<Rs485RxEvent> Rs485RxEventStream::next() {
+    if (!impl_->reader) return std::nullopt;
+    pb::Rs485RxEvent msg;
+    if (!impl_->reader->Read(&msg)) return std::nullopt;
+
+    Rs485RxEvent ev{};
+    ev.data = msg.data();
+    ev.timestamp_ns = msg.timestamp_ns();
+    return ev;
+}
+
+// ---------------------------------------------------------------------------
 // DeviceClient
 // ---------------------------------------------------------------------------
 struct DeviceClient::Impl : detail::GrpcClientBase<pb::DeviceControl> {
@@ -427,6 +451,17 @@ void DeviceClient::rs485_tx(std::string_view data) {
     pb::Status resp;
     detail::check_grpc(impl_->stub().Rs485Tx(&ctx, req, &resp), "Rs485Tx");
     detail::require_success(resp.success(), resp.message(), "Rs485Tx");
+}
+
+Rs485RxEventStream DeviceClient::subscribe_rs485_rx(std::uint32_t queue_size,
+                                                    bool drop_old) {
+    Rs485RxEventStream stream;
+    pb::Rs485SubscribeRequest req;
+    req.set_queue_size(queue_size);
+    req.set_drop_old(drop_old);
+    stream.impl_->reader =
+        impl_->stub().SubscribeRs485Rx(&stream.impl_->ctx, req);
+    return stream;
 }
 
 // --- GPIO ---

@@ -75,6 +75,14 @@ struct DeviceEvent {
     float temperature = 0.0f;
 };
 
+// One RS-485 frame received on the bus (idle-delimited, <= 512 bytes).
+// timestamp_ns is the device-side receive time (host clock), not the MCU
+// capture time.
+struct Rs485RxEvent {
+    std::string data;              // protobuf bytes <-> std::string (rs485_tx style)
+    std::uint64_t timestamp_ns = 0;
+};
+
 // ---- Native autofocus job API (device.py 0.8, StartOneShotAf family) -----------
 
 // Result of starting an autofocus job.
@@ -139,6 +147,27 @@ public:
 
 private:
     DeviceEventStream();
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+    friend class DeviceClient;
+};
+
+// Pull-based RS-485 RX frame stream (same lifetime contract as
+// DeviceEventStream: must not outlive the producing DeviceClient).
+class Rs485RxEventStream {
+public:
+    ~Rs485RxEventStream();
+    Rs485RxEventStream(Rs485RxEventStream&&) noexcept;
+    Rs485RxEventStream& operator=(Rs485RxEventStream&&) noexcept;
+    Rs485RxEventStream(const Rs485RxEventStream&) = delete;
+    Rs485RxEventStream& operator=(const Rs485RxEventStream&) = delete;
+
+    // Next frame, or std::nullopt when the stream ends (server closed /
+    // broken — e.g. old firmware without SubscribeRs485Rx).
+    std::optional<Rs485RxEvent> next();
+
+private:
+    Rs485RxEventStream();
     struct Impl;
     std::unique_ptr<Impl> impl_;
     friend class DeviceClient;
@@ -221,6 +250,12 @@ public:
     void rs485_init(std::uint32_t baudrate, std::string config = "");
     void rs485_deinit();
     void rs485_tx(std::string_view data);
+    // Stream RS-485 RX frames (one event per bus frame). Valid before
+    // rs485_init as well — the stream stays silent until the device's
+    // driver produces frames. queue_size is clamped server-side to 16..128;
+    // drop_old = keep newest frames on overflow (else keep order).
+    Rs485RxEventStream subscribe_rs485_rx(std::uint32_t queue_size = 16,
+                                          bool drop_old = true);
 
     // ---- GPIO ----
     void gpio_set(std::uint32_t pin, bool value);

@@ -563,6 +563,42 @@ class T08Misc(DeviceTestCase):
                       restored=bool(original))
 
 
+    def test_04_subscribe_rs485_rx(self):
+        """Bench has no RS-485 peer: assert the subscription stream opens and
+        stays healthy (plumbing-level verification); frames are not asserted.
+        Exercises init -> subscribe-alive across tx -> deinit -> re-init."""
+        self.mark("DeviceClient.subscribe_rs485_rx")
+        _, init_err = _soft(self.timed, self.client.rs485_init, 9600)
+        if init_err is not None:
+            self.na(f"rs485_init rejected: {init_err}")
+
+        frames = []
+
+        def drain():
+            try:
+                for ev in self.client.subscribe_rs485_rx(queue_size=8,
+                                                         drop_old=True):
+                    frames.append(len(ev.data))
+            except Exception:
+                pass
+
+        t = threading.Thread(target=drain, daemon=True)
+        t.start()
+        time.sleep(2.0)  # no peer: stream must stay open and silent
+        _, tx_err = _soft(self.timed, self.client.rs485_tx, b"\x55\xaa")
+        _, deinit_err = _soft(self.timed, self.client.rs485_deinit)
+        time.sleep(0.5)
+        _, reinit_err = _soft(self.timed, self.client.rs485_init, 9600)
+        time.sleep(0.5)
+        self.evidence(thread_alive=t.is_alive(), frames=frames[:10],
+                      collected=len(frames), tx=tx_err or "ok",
+                      deinit=deinit_err or "ok", reinit=reinit_err or "ok")
+        self.assertTrue(t.is_alive(),
+                        "subscribe_rs485_rx iterator died (old firmware "
+                        "without SubscribeRs485Rx would raise UNIMPLEMENTED)")
+        _, deinit2_err = _soft(self.timed, self.client.rs485_deinit)
+        self.evidence(final_deinit=deinit2_err or "ok")
+
 def tearDownModule():
     """Belt-and-braces: even if a test failed mid-area, leave the device
     in the agreed post-test state (lens zeroed, illuminators off,
