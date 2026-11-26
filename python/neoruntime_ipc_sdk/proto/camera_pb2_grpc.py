@@ -290,6 +290,11 @@ class CameraControlStub(object):
                 request_serializer=camera__pb2.Rs485TxRequest.SerializeToString,
                 response_deserializer=camera__pb2.Status.FromString,
                 _registered_method=True)
+        self.SubscribeRs485Rx = channel.unary_stream(
+                '/aipc.camera.CameraControl/SubscribeRs485Rx',
+                request_serializer=camera__pb2.Empty.SerializeToString,
+                response_deserializer=camera__pb2.Rs485RxEvent.FromString,
+                _registered_method=True)
         self.GetCapabilities = channel.unary_unary(
                 '/aipc.camera.CameraControl/GetCapabilities',
                 request_serializer=camera__pb2.Empty.SerializeToString,
@@ -736,6 +741,15 @@ class CameraControlServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SubscribeRs485Rx(self, request, context):
+        """Stream RS-485 RX frames (one event per received bus frame). Valid before
+        Rs485Init as well: the stream simply stays silent until the MCU driver
+        produces frames. Policy (queueing/drop) is enforced by device-control.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetCapabilities(self, request, context):
         """Capabilities (auto-detected from HAL)
         """
@@ -1155,6 +1169,11 @@ def add_CameraControlServicer_to_server(servicer, server):
                     servicer.Rs485Tx,
                     request_deserializer=camera__pb2.Rs485TxRequest.FromString,
                     response_serializer=camera__pb2.Status.SerializeToString,
+            ),
+            'SubscribeRs485Rx': grpc.unary_stream_rpc_method_handler(
+                    servicer.SubscribeRs485Rx,
+                    request_deserializer=camera__pb2.Empty.FromString,
+                    response_serializer=camera__pb2.Rs485RxEvent.SerializeToString,
             ),
             'GetCapabilities': grpc.unary_unary_rpc_method_handler(
                     servicer.GetCapabilities,
@@ -2645,6 +2664,33 @@ class CameraControl(object):
             '/aipc.camera.CameraControl/Rs485Tx',
             camera__pb2.Rs485TxRequest.SerializeToString,
             camera__pb2.Status.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SubscribeRs485Rx(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/aipc.camera.CameraControl/SubscribeRs485Rx',
+            camera__pb2.Empty.SerializeToString,
+            camera__pb2.Rs485RxEvent.FromString,
             options,
             channel_credentials,
             insecure,
