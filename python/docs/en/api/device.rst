@@ -193,6 +193,23 @@ RS-485 Serial Control
    # Deinitialize
    dev.rs485_deinit()
 
+For the receive direction, ``subscribe_rs485_rx()`` yields one
+``Rs485RxEvent`` per frame received on the bus:
+
+.. code-block:: python
+
+   dev.rs485_init(baudrate=9600)
+   for ev in dev.subscribe_rs485_rx(queue_size=16, drop_old=True):
+       print(len(ev.data), ev.timestamp_ns)
+
+It is a generator: the subscription is established on the first iteration.
+``queue_size`` is this subscriber's backlog depth (clamped to 16..128 by the
+server); when the backlog is full, ``drop_old=True`` discards the oldest frame
+and ``False`` the newest. Calling it before ``rs485_init()`` is valid — the
+stream simply stays silent until frames arrive. Closing the client ends the
+subscription. Requires firmware with ``SubscribeRs485Rx`` (older firmware
+ends the stream with UNIMPLEMENTED).
+
 Getting Device Status
 ~~~~~~~~~~~~~~~~~~~~~
 

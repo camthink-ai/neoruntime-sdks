@@ -403,6 +403,12 @@ Device control client for controlling camera peripherals.
 - `rs485_init(baudrate: int, config: str)` - RS-485 initialization
 - `rs485_deinit()` - RS-485 deinitialization
 - `rs485_tx(data: bytes)` - RS-485 data transmission
+- `subscribe_rs485_rx(queue_size: int = 16, drop_old: bool = True)` -
+  Stream RS-485 RX frames (`Rs485RxEvent{data: bytes, timestamp_ns: int}`);
+  one event per received bus frame, bounded per-subscriber backlog with an
+  explicit drop policy. Valid before `rs485_init` — the stream stays silent
+  until the driver produces frames. Requires firmware with
+  `SubscribeRs485Rx` (older devices end the stream with UNIMPLEMENTED).
 
 **Status Query:**
 - `get_device_status()` - Get device status
