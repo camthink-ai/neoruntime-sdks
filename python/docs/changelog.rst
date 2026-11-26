@@ -1,6 +1,25 @@
 更新日志
 ========
 
+v0.8.2 (2026-11-26)
+-------------------
+
+新增功能
+~~~~~~~~
+
+- **RS-485 接收流**：新增 ``DeviceClient.subscribe_rs485_rx()``，把 RS-485 总线上收到的每一帧以事件流交付；``Rs485RxEvent`` 携带原始字节 ``data`` 与设备侧接收时间 ``timestamp_ns``。每个订阅者有独立的有界队列：``queue_size`` 设定队列深度（0 取默认值 16，超过 128 的按 128 计），``drop_old`` 决定队列满时丢最旧还是丢最新的一帧；多个订阅者共用一条上游流，camera-daemon 重启后自动重连，订阅不中断。交付语义为 at-least-once，需要精确一次的调用方自行去重。该接口需要平台固件支持 ``SubscribeRs485Rx`` RPC，不支持的固件上迭代器以 gRPC ``UNIMPLEMENTED`` 错误结束。
+
+改进
+~~~~
+
+- 同步平台 proto：camera-control 与 device-control 新增 ``SubscribeRs485Rx`` 流式 RPC，以及 ``Rs485SubscribeRequest`` / ``Rs485RxEvent`` 消息
+- 设备测试套件新增 ``test_04_subscribe_rs485_rx``，离线单元测试覆盖订阅参数与生成器语义
+
+文档
+~~~~
+
+- README、``SDK_API_ZH.md`` 与中英 API 参考补充 ``subscribe_rs485_rx`` 的参数、生成器语义与投递契约
+
 v0.8.1 (2026-10-15)
 -------------------
 

@@ -17,7 +17,7 @@ Provides clean API to access platform capabilities:
 
 from __future__ import annotations
 
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 from .accel import (
     AccelRouter,

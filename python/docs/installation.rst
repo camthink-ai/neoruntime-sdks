@@ -72,7 +72,7 @@ GitHub Release，并把 wheel 和 sdist 相继发布到 TestPyPI 与 PyPI。
 
    import neoruntime_ipc_sdk
    print(neoruntime_ipc_sdk.__version__)
-   # 输出: 0.8.1
+   # 输出: 0.8.2
 
 开发环境安装
 ------------
@@ -110,8 +110,8 @@ Docker 环境
 .. code-block:: dockerfile
 
    FROM python:3.10-slim
-   COPY neoruntime_ipc_sdk-0.8.1-py3-none-any.whl /tmp/
-   RUN python -m pip install --no-cache-dir /tmp/neoruntime_ipc_sdk-0.8.1-py3-none-any.whl
+   COPY neoruntime_ipc_sdk-0.8.2-py3-none-any.whl /tmp/
+   RUN python -m pip install --no-cache-dir /tmp/neoruntime_ipc_sdk-0.8.2-py3-none-any.whl
    WORKDIR /app
    COPY app.py .
    CMD ["python3", "app.py"]
