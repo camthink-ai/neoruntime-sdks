@@ -760,8 +760,8 @@ creates a GitHub Release with the distributions attached and publishes to
 TestPyPI and then PyPI:
 
 ```bash
-git tag v0.8.1
-git push origin v0.8.1
+git tag v0.8.2
+git push origin v0.8.2
 ```
 
 The release tag version must match the package version in `setup.py` and

@@ -1,6 +1,6 @@
 # NeoRuntime Python SDK 中文接口使用手册
 
-本文档对应 `neoruntime-ipc-sdk 0.8.1`，以
+本文档对应 `neoruntime-ipc-sdk 0.8.2`，以
 `neoruntime_ipc_sdk.__all__` 中公开导出的接口为准。文中的服务端点默认指向
 NeoRuntime 设备上的 Unix Domain Socket；在非设备环境中调用硬件接口通常会收到
 连接错误。

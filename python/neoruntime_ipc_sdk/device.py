@@ -607,8 +607,8 @@ class DeviceClient(GrpcClient):
         end the subscription.
 
         Args:
-            queue_size: per-subscriber backlog depth (server clamps to
-                16..128; 0 selects the default)
+            queue_size: per-subscriber backlog depth (0 selects the
+                default of 16; values above 128 are capped at 128)
             drop_old: when the backlog is full, drop the oldest frame
                 (keep newest) instead of dropping the newest (keep order)
         """

@@ -74,7 +74,7 @@ Verify Installation
 
    import neoruntime_ipc_sdk
    print(neoruntime_ipc_sdk.__version__)
-   # Output: 0.8.1
+   # Output: 0.8.2
 
 Development Environment
 -----------------------
@@ -112,8 +112,8 @@ Or build your own image:
 .. code-block:: dockerfile
 
    FROM python:3.10-slim
-   COPY neoruntime_ipc_sdk-0.8.1-py3-none-any.whl /tmp/
-   RUN python -m pip install --no-cache-dir /tmp/neoruntime_ipc_sdk-0.8.1-py3-none-any.whl
+   COPY neoruntime_ipc_sdk-0.8.2-py3-none-any.whl /tmp/
+   RUN python -m pip install --no-cache-dir /tmp/neoruntime_ipc_sdk-0.8.2-py3-none-any.whl
    WORKDIR /app
    COPY app.py .
    CMD ["python3", "app.py"]

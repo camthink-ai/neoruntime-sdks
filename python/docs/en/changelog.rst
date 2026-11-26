@@ -1,6 +1,25 @@
 Changelog
 =========
 
+v0.8.2 (2026-11-26)
+-------------------
+
+New Features
+~~~~~~~~~~~~
+
+- **RS-485 receive stream**: added ``DeviceClient.subscribe_rs485_rx()``, which delivers every frame received on the RS-485 bus as an event stream; ``Rs485RxEvent`` carries the raw bytes (``data``) and the device-side receive time (``timestamp_ns``). Each subscriber owns a bounded queue: ``queue_size`` sets the queue depth (0 selects the default of 16; values above 128 are capped at 128) and ``drop_old`` selects whether the oldest or the newest frame is discarded when the queue is full. All subscribers share one upstream stream that reconnects automatically after a camera-daemon restart, so subscriptions survive the restart. Delivery is at least once; callers that need exactly-once semantics de-duplicate themselves. The call needs platform firmware that serves the ``SubscribeRs485Rx`` RPC; on firmware without it the iterator ends with a gRPC ``UNIMPLEMENTED`` error.
+
+Improvements
+~~~~~~~~~~~~
+
+- Synced the platform protos: camera-control and device-control gain the ``SubscribeRs485Rx`` streaming RPC and the ``Rs485SubscribeRequest`` / ``Rs485RxEvent`` messages
+- The device test suite gains ``test_04_subscribe_rs485_rx``; offline unit tests cover the subscription arguments and the generator semantics
+
+Documentation
+~~~~~~~~~~~~~
+
+- README, ``SDK_API_ZH.md`` and the bilingual API reference document the ``subscribe_rs485_rx`` arguments, generator semantics and delivery contract
+
 v0.8.1 (2026-10-15)
 -------------------
 
