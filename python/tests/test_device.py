@@ -258,3 +258,45 @@ class TestDeviceClientStatus:
         client.stub = mock_stub
 
         assert client.get_device_status().ir_led_on is False
+
+
+class TestDeviceClientRs485Rx:
+    """subscribe_rs485_rx: typed wrapper + request passthrough."""
+
+    @patch('neoruntime_ipc_sdk.device.grpc.insecure_channel')
+    def test_subscribe_rs485_rx_maps_events_and_request(self, mock_channel):
+        from neoruntime_ipc_sdk import Rs485RxEvent
+        from neoruntime_ipc_sdk.proto import device_pb2
+
+        mock_stub = Mock()
+        mock_stub.SubscribeRs485Rx.return_value = iter([
+            device_pb2.Rs485RxEvent(data=b"\x01\x02", timestamp_ns=11),
+            device_pb2.Rs485RxEvent(data=b"abc", timestamp_ns=22),
+        ])
+        client = DeviceClient()
+        client.stub = mock_stub
+
+        events = list(client.subscribe_rs485_rx(queue_size=32, drop_old=False))
+
+        assert events == [
+            Rs485RxEvent(data=b"\x01\x02", timestamp_ns=11),
+            Rs485RxEvent(data=b"abc", timestamp_ns=22),
+        ]
+        req = mock_stub.SubscribeRs485Rx.call_args[0][0]
+        assert req.queue_size == 32
+        assert req.drop_old is False
+
+    @patch('neoruntime_ipc_sdk.device.grpc.insecure_channel')
+    def test_subscribe_rs485_rx_defaults(self, mock_channel):
+        from neoruntime_ipc_sdk.proto import device_pb2
+
+        mock_stub = Mock()
+        mock_stub.SubscribeRs485Rx.return_value = iter([])
+        client = DeviceClient()
+        client.stub = mock_stub
+
+        list(client.subscribe_rs485_rx())
+
+        req = mock_stub.SubscribeRs485Rx.call_args[0][0]
+        assert req.queue_size == 16
+        assert req.drop_old is True

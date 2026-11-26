@@ -402,7 +402,7 @@ with EventClient() as events:
 | AF 测光 | `set_af_windows(enabled, windows, stream_id="main")` 设置窗口；`get_af_measurement()` 返回 `AfMeasurement`。当前部分固件可能尚未实现这两个服务端接口。 |
 | GPIO | `gpio_set(pin, value)` 输出；`gpio_get(pin)` 读取。 |
 | Wiegand | `set_wiegand_out(channel, enable)` 设置；`get_wiegand_out(channel)` 查询。 |
-| RS-485 | `rs485_init(baudrate, config="")` 初始化；`rs485_tx(data)` 发送；`rs485_deinit()` 释放。 |
+| RS-485 | `rs485_init(baudrate, config="")` 初始化；`rs485_tx(data)` 发送；`rs485_deinit()` 释放；`subscribe_rs485_rx(queue_size=16, drop_old=True)` 迭代 `Rs485RxEvent`（总线上每帧一条，需固件支持 `SubscribeRs485Rx`）。 |
 | 状态/事件 | `get_device_status()` 返回 `DeviceStatus`；`subscribe_events()` 迭代 `DeviceEvent`。 |
 
 ```python

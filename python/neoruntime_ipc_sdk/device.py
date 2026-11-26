@@ -55,6 +55,18 @@ class DeviceEvent:
 
 
 @dataclass
+class Rs485RxEvent:
+    """One RS-485 frame received on the bus (idle-delimited, <= 512 bytes).
+
+    timestamp_ns is the device-side receive time (host clock), not the MCU
+    capture time.
+    """
+
+    data: bytes
+    timestamp_ns: int
+
+
+@dataclass
 class AfJob:
     """Result of starting an autofocus job (native AF RPCs)."""
 
@@ -578,6 +590,38 @@ class DeviceClient(GrpcClient):
 
         if not response.success:
             raise RuntimeError(f"Rs485Tx failed: {response.message}")
+
+    def subscribe_rs485_rx(
+        self, queue_size: int = 16, drop_old: bool = True
+    ) -> Iterator[Rs485RxEvent]:
+        """Stream RS-485 RX frames; one event per received bus frame.
+
+        Valid before rs485_init() as well — the stream simply stays silent
+        until the device's RS-485 driver produces frames. The iterator ends
+        with a grpc.RpcError when the stream breaks (e.g. old firmware
+        without SubscribeRs485Rx, or the service stopping).
+
+        This is a generator, so the subscription is only established when
+        the returned iterator is first advanced (same as subscribe_events()):
+        frames received before that are not delivered. Close the client to
+        end the subscription.
+
+        Args:
+            queue_size: per-subscriber backlog depth (server clamps to
+                16..128; 0 selects the default)
+            drop_old: when the backlog is full, drop the oldest frame
+                (keep newest) instead of dropping the newest (keep order)
+        """
+        if self.stub is None:
+            self.connect()
+
+        request = device_pb2.Rs485SubscribeRequest(
+            queue_size=queue_size, drop_old=drop_old
+        )
+        for event_msg in self.stub.SubscribeRs485Rx(request):
+            yield Rs485RxEvent(
+                data=bytes(event_msg.data), timestamp_ns=event_msg.timestamp_ns
+            )
 
     def lens_reset_zero(self, zoom: bool = True, focus: bool = True) -> None:
         if self.stub is None:

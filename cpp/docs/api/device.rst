@@ -57,6 +57,10 @@ IRCUT、云台、变焦 / 对焦与自动对焦套件、GPIO、RS485、Wiegand�
 - ``set_wiegand_out(channel, enable)`` / ``get_wiegand_out(channel)``
 - ``rs485_init(baudrate, config="")`` / ``rs485_deinit()`` /
   ``rs485_tx(data)``
+- ``subscribe_rs485_rx(queue_size=16, drop_old=true)`` —— 返回
+  ``Rs485RxEventStream`` ， ``next()`` 逐帧出 ``Rs485RxEvent``
+  （ ``data`` + ``timestamp_ns`` ）；可在 ``rs485_init`` 之前调用，
+  流保持静默直到总线上有帧（需固件支持 ``SubscribeRs485Rx`` ）
 - ``gpio_set(pin, value)`` / ``gpio_get(pin)``
 
 状态与事件：

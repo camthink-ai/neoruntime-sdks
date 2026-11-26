@@ -193,6 +193,20 @@ RS-485 串口控制
    # 反初始化
    dev.rs485_deinit()
 
+接收方向用 ``subscribe_rs485_rx()`` 订阅，总线上每收到一帧产出一条
+``Rs485RxEvent`` 事件：
+
+.. code-block:: python
+
+   dev.rs485_init(baudrate=9600)
+   for ev in dev.subscribe_rs485_rx(queue_size=16, drop_old=True):
+       print(len(ev.data), ev.timestamp_ns)
+
+它是生成器，首次迭代时才真正建立订阅。参数 ``queue_size`` 是该订阅者的积压深度
+（服务端钳制到 16 到 128）；积压满时 ``drop_old=True`` 丢最旧，否则丢最新。
+在 ``rs485_init()`` 之前调用也合法，流会保持静默直到总线上有帧。关闭客户端
+即结束订阅。需要固件支持 ``SubscribeRs485Rx`` （旧固件会以 UNIMPLEMENTED 结束流）。
+
 获取设备状态
 ~~~~~~~~~~~~
 

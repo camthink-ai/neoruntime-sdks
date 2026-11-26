@@ -301,6 +301,11 @@ class DeviceControlStub(object):
                 request_serializer=device__pb2.Rs485TxRequest.SerializeToString,
                 response_deserializer=device__pb2.Status.FromString,
                 _registered_method=True)
+        self.SubscribeRs485Rx = channel.unary_stream(
+                '/aipc.device.DeviceControl/SubscribeRs485Rx',
+                request_serializer=device__pb2.Rs485SubscribeRequest.SerializeToString,
+                response_deserializer=device__pb2.Rs485RxEvent.FromString,
+                _registered_method=True)
         self.GetCapabilities = channel.unary_unary(
                 '/aipc.device.DeviceControl/GetCapabilities',
                 request_serializer=device__pb2.Empty.SerializeToString,
@@ -644,6 +649,15 @@ class DeviceControlServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SubscribeRs485Rx(self, request, context):
+        """Push-stream of RS-485 RX frames, fanned out from one camera-daemon
+        stream. Valid before Rs485Init as well: the stream stays silent until
+        the MCU driver produces frames.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetCapabilities(self, request, context):
         """Capabilities (auto-detected from HAL)
         """
@@ -918,6 +932,11 @@ def add_DeviceControlServicer_to_server(servicer, server):
                     servicer.Rs485Tx,
                     request_deserializer=device__pb2.Rs485TxRequest.FromString,
                     response_serializer=device__pb2.Status.SerializeToString,
+            ),
+            'SubscribeRs485Rx': grpc.unary_stream_rpc_method_handler(
+                    servicer.SubscribeRs485Rx,
+                    request_deserializer=device__pb2.Rs485SubscribeRequest.FromString,
+                    response_serializer=device__pb2.Rs485RxEvent.SerializeToString,
             ),
             'GetCapabilities': grpc.unary_unary_rpc_method_handler(
                     servicer.GetCapabilities,
@@ -2358,6 +2377,33 @@ class DeviceControl(object):
             '/aipc.device.DeviceControl/Rs485Tx',
             device__pb2.Rs485TxRequest.SerializeToString,
             device__pb2.Status.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SubscribeRs485Rx(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/aipc.device.DeviceControl/SubscribeRs485Rx',
+            device__pb2.Rs485SubscribeRequest.SerializeToString,
+            device__pb2.Rs485RxEvent.FromString,
             options,
             channel_credentials,
             insecure,

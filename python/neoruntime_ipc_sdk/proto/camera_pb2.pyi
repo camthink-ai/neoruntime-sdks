@@ -751,6 +751,14 @@ class Rs485TxRequest(_message.Message):
     data: bytes
     def __init__(self, data: _Optional[bytes] = ...) -> None: ...
 
+class Rs485RxEvent(_message.Message):
+    __slots__ = ("data", "timestamp_ns")
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    TIMESTAMP_NS_FIELD_NUMBER: _ClassVar[int]
+    data: bytes
+    timestamp_ns: int
+    def __init__(self, data: _Optional[bytes] = ..., timestamp_ns: _Optional[int] = ...) -> None: ...
+
 class McuRawRequestMessage(_message.Message):
     __slots__ = ("cmd", "payload")
     CMD_FIELD_NUMBER: _ClassVar[int]

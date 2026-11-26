@@ -76,6 +76,7 @@ from .device import (
     DeviceEvent,
     DeviceStatus,
     IrCutMode,
+    Rs485RxEvent,
 )
 from .diagnostics import diagnostics
 from .draw import (
