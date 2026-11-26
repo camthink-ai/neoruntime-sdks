@@ -252,8 +252,9 @@ public:
     void rs485_tx(std::string_view data);
     // Stream RS-485 RX frames (one event per bus frame). Valid before
     // rs485_init as well — the stream stays silent until the device's
-    // driver produces frames. queue_size is clamped server-side to 16..128;
-    // drop_old = keep newest frames on overflow (else keep order).
+    // driver produces frames. queue_size 0 selects the default (16), values
+    // above 128 are capped at 128; drop_old = keep newest frames on overflow
+    // (else keep order).
     Rs485RxEventStream subscribe_rs485_rx(std::uint32_t queue_size = 16,
                                           bool drop_old = true);
 

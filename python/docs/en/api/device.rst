@@ -203,12 +203,12 @@ For the receive direction, ``subscribe_rs485_rx()`` yields one
        print(len(ev.data), ev.timestamp_ns)
 
 It is a generator: the subscription is established on the first iteration.
-``queue_size`` is this subscriber's backlog depth (clamped to 16..128 by the
-server); when the backlog is full, ``drop_old=True`` discards the oldest frame
-and ``False`` the newest. Calling it before ``rs485_init()`` is valid — the
-stream simply stays silent until frames arrive. Closing the client ends the
-subscription. Requires firmware with ``SubscribeRs485Rx`` (older firmware
-ends the stream with UNIMPLEMENTED).
+``queue_size`` is this subscriber's backlog depth (0 selects the default of
+16; values above 128 are capped at 128); when the backlog is full,
+``drop_old=True`` discards the oldest frame and ``False`` the newest. Calling
+it before ``rs485_init()`` is valid — the stream simply stays silent until
+frames arrive. Closing the client ends the subscription. Requires firmware
+with ``SubscribeRs485Rx`` (older firmware ends the stream with UNIMPLEMENTED).
 
 Getting Device Status
 ~~~~~~~~~~~~~~~~~~~~~
